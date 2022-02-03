@@ -13,7 +13,7 @@
     <button @click="signin(true)">テストログイン</button>
   </div>
   <!-- ログイン中 -->
-  <div v-else>
+  <div v-else-if="isLogin && !isPreview" class="login">
     <p>ログイン中</p>
     <p>{{ user?.email }}</p>
     <p>topic:{{ targetTopicUID }}</p>
@@ -23,6 +23,7 @@
     <button @click="getTest">テスト</button>
     <button @click="getURL">ゲット</button>
   </div>
+  <div v-else-if="isLogin && isPreview" v-html="markdown"></div>>
 </template>
 
 <script lang="ts">
@@ -31,6 +32,7 @@ import { db } from "./firebase"
 import { getAuth, signOut, signInWithEmailAndPassword, onAuthStateChanged, User }
   from 'firebase/auth'
 import { getDoc, doc, query, collection, where, getDocs } from "firebase/firestore";
+import { marked } from 'marked'
 
 
 const auth = getAuth();
@@ -42,6 +44,11 @@ export default defineComponent({
     const password = ref("");
     const isLogin = ref(false);
     const user = ref<User | null>(null);
+
+    const markdown = marked("# xxxxxxxxxxxxxx");
+    console.log("mark")
+    console.log(markdown);
+
     // サインイン
     const signin = async (isTest: boolean = false) => {
       if (isTest) {
@@ -113,13 +120,28 @@ export default defineComponent({
           console.log("あり");
           console.log(querySnapshot.docs[0].data())
         }
-
+        preview(true);
       });
     };
 
+    const isPreview = ref(false);
+    const preview = (flag: boolean) => {
+      isPreview.value = flag;
+    }
 
-
-    return { email, password, signin, isLogin, signout, topicUID, user, registerTopicUID, targetTopicUID, getTest, getURL }
+    return { email, password, signin, isLogin, signout, topicUID, user, registerTopicUID, targetTopicUID, getTest, getURL, isPreview, markdown }
   },
 })
 </script>
+
+<style scoped>
+.login {
+  display: relative;
+}
+.mavon {
+  top: 0px;
+  right: 0px;
+  z-index: 100;
+  width: 1500px;
+}
+</style>

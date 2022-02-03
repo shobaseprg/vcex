@@ -8,11 +8,14 @@
     "clear": "rimraf extension/dist extension/manifest.json"
   },
   "dependencies": {
+    "marked": "^4.0.12",
+    "mavon-editor": "^3.0.0-beta",
     "vue": "^3.2.25"
   },
   "devDependencies": {
     "@types/chrome": "0.0.177",
     "@types/fs-extra": "^9.0.13",
+    "@types/marked": "^4.0.2",
     "@types/node": "^17.0.14",
     "@vitejs/plugin-vue": "^2.0.0",
     "esno": "^0.14.0",
