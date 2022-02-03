@@ -1,0 +1,24 @@
+{
+  "name": "vcex",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "run-s clear build:manifest build:popup",
+    "build:manifest": "esno src/manifest.ts",
+    "build:popup": "vite build",
+    "clear": "rimraf extension/dist extension/manifest.json"
+  },
+  "dependencies": {
+    "vue": "^3.2.25"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/node": "^17.0.14",
+    "@vitejs/plugin-vue": "^2.0.0",
+    "esno": "^0.14.0",
+    "fs-extra": "^10.0.0",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.4.4",
+    "vite": "^2.7.2",
+    "vue-tsc": "^0.29.8"
+  }
+}
