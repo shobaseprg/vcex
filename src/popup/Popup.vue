@@ -21,6 +21,7 @@
     <button @click="registerTopicUID()">トピック登録</button>
     <button @click="signout()">サインアウト</button>
     <button @click="getTest">テスト</button>
+    <button @click="getURL">ゲット</button>
   </div>
 </template>
 
@@ -29,7 +30,7 @@ import { computed, defineComponent, onBeforeMount, ref } from 'vue'
 import { db } from "./firebase"
 import { getAuth, signOut, signInWithEmailAndPassword, onAuthStateChanged, User }
   from 'firebase/auth'
-import { getDoc, doc } from "firebase/firestore";
+import { getDoc, doc, query, collection, where, getDocs } from "firebase/firestore";
 
 
 const auth = getAuth();
@@ -88,13 +89,37 @@ export default defineComponent({
     };
 
     const getTest = async () => {
-      const docRef = doc(db, "topic", "HE4TmkxC3F48mmLKRl3b")
+      console.log(targetTopicUID.value);
+      const docRef = doc(db, "topic", targetTopicUID.value)
       const d = await getDoc(docRef)
       console.log(d.data());
     };
 
 
-    return { email, password, signin, isLogin, signout, topicUID, user, registerTopicUID, targetTopicUID, getTest }
+    const getURL = async () => {
+      chrome.storage.sync.get(["targetURL"], async (items) => {
+        console.log("⬇︎【ログ】", "targetTopicUID.value"); console.log(targetTopicUID.value);
+        // LfgZ7LCJmGX7nElsIgAN
+        const uid = targetTopicUID.value
+        console.log("⬇︎【ログ】", "uid"); console.log(typeof uid);
+        const colRef = collection(db, "topic", uid, "history")
+        const q = query(colRef, where("url", "==", items.targetURL))
+        const querySnapshot = await getDocs(q);
+        console.log("⬇︎【ログ】", "querySnapshot"); console.log(querySnapshot);
+        console.log("⬇︎【ログ】", "items.targetURL"); console.log(items.targetURL);
+        if (querySnapshot.docs.length === 0) {
+          alert("調査履歴はありません。")
+        } else {
+          console.log("あり");
+          console.log(querySnapshot.docs[0].data())
+        }
+
+      });
+    };
+
+
+
+    return { email, password, signin, isLogin, signout, topicUID, user, registerTopicUID, targetTopicUID, getTest, getURL }
   },
 })
 </script>
