@@ -8,8 +8,6 @@
     "clear": "rimraf extension/dist extension/manifest.json"
   },
   "dependencies": {
-    "marked": "^4.0.12",
-    "mavon-editor": "^3.0.0-beta",
     "vue": "^3.2.25"
   },
   "devDependencies": {

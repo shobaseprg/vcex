@@ -1,29 +1,46 @@
 <template>
-  <!-- ログイン -->
-  <div v-if="!isLogin">
-    <div v-if="!isLogin">
+  <!-- 共通 -->
+  <div class="root-container">
+    <p>Searchistory</p>
+    <button>
+      <a href="https://searchistory.web.app/" target="_blank" rel="noopener noreferrer">アプリへ</a>
+    </button>
+    <!-- 初期 -->
+    <div v-if="isLogin === LoginStatus.INIT"></div>
+    <!-- ログアウト  -->
+    <div v-else-if="isLogin === LoginStatus.OUT">
+      <p>サインアップがまだの場合は、上記ボタンよりアプリに移動してサインアップを行ってください。</p>
       <p>メール</p>
-      <input v-model="email" />
+      <input type="email" v-model="email" />
+      <div>
+        <p>パスワード</p>
+        <input type="password" v-model="password" />
+      </div>
+      <button class="auth-button" @click="signin()">ログイン</button>
+      <button @click="signin(true)">tl</button>
     </div>
-    <div>
-      <p>パスワード</p>
-      <input v-model="password" />
+    <!-- ログイン中 -->
+    <div v-else-if="isLogin === LoginStatus.IN">
+      <p>ログイン：{{ user?.email }}</p>
+      <!-- トピック情報 -->
+      <p>topicUID:{{ targetTopicUID }}</p>
+      <p>タイトル:{{ targetTopicTitle }}</p>
+      <input type="text" v-model="formTopicUID" />
+      <button @click="registerTopicUID()">トピック登録</button>
+      <!-- 結果確認 -->
+      <div class="result-prev" v-if="isPreview">
+        結果表示欄
+        <p>url:{{ targetURL }}</p>
+        <div v-if="!isResult">このページの調査履歴はありません。</div>
+        <div v-else>このページの調査結果はあります。</div>
+        <button @click="setPreview(false)">閉じる</button>
+      </div>
+      <!-- <button @click="getTest">gt</button> -->
+      <button @click="getURL">調査結果確認</button>
+      <!-- サインアウト -->
+      <button @click="signout()">サインアウト</button>
     </div>
-    <button @click="signin()">ログイン</button>
-    <button @click="signin(true)">テストログイン</button>
   </div>
-  <!-- ログイン中 -->
-  <div v-else-if="isLogin && !isPreview" class="login">
-    <p>ログイン中</p>
-    <p>{{ user?.email }}</p>
-    <p>topic:{{ targetTopicUID }}</p>
-    <input type="text" v-model="topicUID" />
-    <button @click="registerTopicUID()">トピック登録</button>
-    <button @click="signout()">サインアウト</button>
-    <button @click="getTest">テスト</button>
-    <button @click="getURL">ゲット</button>
-  </div>
-  <div v-else-if="isLogin && isPreview" v-html="markdown"></div>>
 </template>
 
 <script lang="ts">
@@ -32,8 +49,6 @@ import { db } from "./firebase"
 import { getAuth, signOut, signInWithEmailAndPassword, onAuthStateChanged, User }
   from 'firebase/auth'
 import { getDoc, doc, query, collection, where, getDocs } from "firebase/firestore";
-import { marked } from 'marked'
-
 
 const auth = getAuth();
 
@@ -42,12 +57,16 @@ export default defineComponent({
   setup() {
     const email = ref("");
     const password = ref("");
-    const isLogin = ref(false);
+    const isLogin = ref("init");
     const user = ref<User | null>(null);
 
-    const markdown = marked("# xxxxxxxxxxxxxx");
-    console.log("mark")
-    console.log(markdown);
+    const LoginStatus = {
+      INIT: 'init',
+      IN: 'in',
+      OUT: 'out',
+    } as const;
+
+    type LoginStatus = typeof LoginStatus[keyof typeof LoginStatus];
 
     // サインイン
     const signin = async (isTest: boolean = false) => {
@@ -69,44 +88,59 @@ export default defineComponent({
     // サインアウト
     const signout = () => {
       signOut(auth).then(() => {
+        resetValue();
         alert("ログアウトしました。")
       });
     };
     // ログイン状態
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        isLogin.value = true;
+        isLogin.value = LoginStatus.IN;
       } else {
-        isLogin.value = false;
+        isLogin.value = LoginStatus.OUT;
       }
     })
     // topicUID制御
-    const topicUID = ref("");
+    const formTopicUID = ref("");
     const targetTopicUID = ref("");
+    const targetTopicTitle = ref("");
 
-    onBeforeMount(() => {
-      targetTopicUID.value = localStorage["targetTopicUID"] ? localStorage["targetTopicUID"] : "";
-    }
-    )
-
-    const registerTopicUID = () => {
-      localStorage["targetTopicUID"] = topicUID.value;
-      topicUID.value = "";
+    const _setTargetTopic = (uid: string) => {
+      localStorage["targetTopicUID"] = uid;
+      formTopicUID.value = "";
       targetTopicUID.value = localStorage["targetTopicUID"];
     };
 
-    const getTest = async () => {
-      console.log(targetTopicUID.value);
-      const docRef = doc(db, "topic", targetTopicUID.value)
-      const d = await getDoc(docRef)
-      console.log(d.data());
-    };
+    onBeforeMount(() => {
+      targetTopicUID.value = localStorage["targetTopicUID"] ? localStorage["targetTopicUID"] : "未設定";
+    }
+    )
 
+    const registerTopicUID = async () => {
+      _setTargetTopic(formTopicUID.value)
+
+      const docRef = doc(db, "topic", targetTopicUID.value)
+      const topicDocSnap = await getDoc(docRef)
+      if (!topicDocSnap.exists()) {
+        alert("そのIDの事案は存在しません。");
+        _setTargetTopic("未設定")
+      }
+      const topicDocData = topicDocSnap.data();
+      if (topicDocData) {
+        targetTopicTitle.value = topicDocData.title;
+      } else {
+        alert("そのIDの事案は存在しません。");
+        _setTargetTopic("未設定")
+      }
+    };
+    // URL制御
+    const targetURL = ref("");
+    const isResult = ref(false);
 
     const getURL = async () => {
       chrome.storage.sync.get(["targetURL"], async (items) => {
+        targetURL.value = items.targetURL;
         console.log("⬇︎【ログ】", "targetTopicUID.value"); console.log(targetTopicUID.value);
-        // LfgZ7LCJmGX7nElsIgAN
         const uid = targetTopicUID.value
         console.log("⬇︎【ログ】", "uid"); console.log(typeof uid);
         const colRef = collection(db, "topic", uid, "history")
@@ -115,33 +149,81 @@ export default defineComponent({
         console.log("⬇︎【ログ】", "querySnapshot"); console.log(querySnapshot);
         console.log("⬇︎【ログ】", "items.targetURL"); console.log(items.targetURL);
         if (querySnapshot.docs.length === 0) {
-          alert("調査履歴はありません。")
+          isResult.value = false
         } else {
           console.log("あり");
           console.log(querySnapshot.docs[0].data())
         }
-        preview(true);
+        setPreview(true);
       });
     };
 
+    // 結果表示制御
     const isPreview = ref(false);
-    const preview = (flag: boolean) => {
+    const setPreview = (flag: boolean) => {
       isPreview.value = flag;
     }
 
-    return { email, password, signin, isLogin, signout, topicUID, user, registerTopicUID, targetTopicUID, getTest, getURL, isPreview, markdown }
+    // 状態初期化
+    const resetValue = () => {
+      email.value = "";
+      password.value = "";
+      isLogin.value = "init";
+      user.value = null;
+      formTopicUID.value = "";
+      targetTopicUID.value = "";
+      targetTopicTitle.value = "";
+      targetURL.value = "";
+      isResult.value = false;
+      isPreview.value = false;
+      localStorage["targetTopicUID"] = "";
+      chrome.storage.sync.set(
+        {
+          targetURL: ""
+        })
+    };
+
+
+    return {
+      email,
+      password,
+      signin,
+      isLogin,
+      signout,
+      formTopicUID,
+      user,
+      registerTopicUID,
+      targetTopicUID,
+      targetTopicTitle,
+      getURL,
+      isPreview,
+      LoginStatus,
+      targetURL,
+      setPreview,
+      isResult
+    }
   },
 })
 </script>
 
 <style scoped>
-.login {
-  display: relative;
+a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: black;
 }
-.mavon {
-  top: 0px;
-  right: 0px;
-  z-index: 100;
-  width: 1500px;
+
+.root-container {
+  width: 300px;
+  border: solid 1px red;
+}
+
+.auth-button {
+  margin-top: 30px;
+}
+.result-prev {
+  border: solid 1px green;
 }
 </style>
