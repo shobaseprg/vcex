@@ -13,7 +13,7 @@ const getManifest = () => {
     background: {
       "service_worker": "event.js"
     },
-    permissions: ['contextMenus', "storage"],
+    permissions: ['contextMenus', "storage", "activeTab", "scripting"],
   }
 }
 function writeManifest() {
