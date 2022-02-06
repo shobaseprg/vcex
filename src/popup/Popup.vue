@@ -34,7 +34,10 @@
         結果表示欄
         <p>url:{{ targetURL }}</p>
         <div v-if="!history">このページの調査履歴はありません。</div>
-        <div v-else>このページの調査結果はあります。{{ history }}</div>
+        <div v-else>
+          <div>調査状態:{{ history.status }}</div>
+          <button @click="copy(history.docID)">この履歴のIDをコピーする</button>
+        </div>
         <button @click="setPreview(false)">閉じる</button>
       </div>
       <!-- <button @click="getTest">gt</button> -->
@@ -99,7 +102,7 @@ export default defineComponent({
       } else {
         isLogin.value = LoginStatus.OUT;
       }
-      setTimeout(() => { authCheckPending.value = false; }, 500);
+      setTimeout(() => { authCheckPending.value = false; }, 1000);
     };
 
     // ログイン状態
@@ -145,19 +148,23 @@ export default defineComponent({
 
     const registerTopicUID = async () => {
       const docRef = doc(db, "topic", formTopicUID.value)
-      const topicDocSnap = await getDoc(docRef)
-      if (!topicDocSnap.exists()) {
-        alert("そのIDの事案は存在しません。");
-        _setTargetTopic("未設定", "未設定")
-      } else {
-        const topicDocData = topicDocSnap.data();
-        _setTargetTopic(formTopicUID.value, topicDocData.title)
+      try {
+        const topicDocSnap = await getDoc(docRef)
+        if (!topicDocSnap.exists()) {
+          alert("そのIDの事案は存在しません。");
+          _setTargetTopic("未設定", "未設定")
+        } else {
+          const topicDocData = topicDocSnap.data();
+          _setTargetTopic(formTopicUID.value, topicDocData.title)
+        }
+      } catch (error: any) {
+        console.log(error);
+        _firebaseErrorHandle(error);
       }
       // todo自分に権限がない時の処理
     };
     // URL制御
     const targetURL = ref("");
-    const isURLExsit = ref(false);
     const history = ref<any | null>(null);
 
     const getHistory = async () => {
@@ -205,6 +212,22 @@ export default defineComponent({
         })
     };
 
+    const copy = (docID: string) => {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(docID);
+      }
+    };
+
+    const _firebaseErrorHandle = (error: string) => {
+      const permissionReg = /insufficient permissions./
+      if (permissionReg.test(error)) {
+        alert("このIDの事案にアクセスする権限がありません。");
+      } else {
+        alert("エラーが発生しました。");
+      }
+    }
+
+
 
     return {
       authCheckPending,
@@ -223,7 +246,8 @@ export default defineComponent({
       LoginStatus,
       targetURL,
       setPreview,
-      history
+      history,
+      copy
     }
   },
 })
