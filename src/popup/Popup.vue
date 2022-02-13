@@ -1,47 +1,74 @@
 <template>
   <!-- 共通 -->
   <div class="root-container">
-    <p>Searchistory</p>
-    <button>
-      <a href="https://searchistory.web.app/" target="_blank" rel="noopener noreferrer">アプリへ</a>
-    </button>
+    <div class="sigunout-button-wrap">
+      <button class="close-button" v-if="isLogin === LoginStatus.IN" @click="signout()">サインアウト</button>
+    </div>
+    <div class="common">
+      <div class="title">
+        <p>- SEARCHISTORY -</p>
+      </div>
+      <button class="auth-button">
+        <a href="https://searchistory.web.app/" target="_blank" rel="noopener noreferrer">アプリへ</a>
+      </button>
+    </div>
     <!-- 初期 -->
     <div v-if="authCheckPending"></div>
     <!-- ログアウト  -->
-    <div v-else-if="isLogin === LoginStatus.OUT && authCheckPending === false">
+    <div class="logout" v-else-if="isLogin === LoginStatus.OUT && authCheckPending === false">
       <p>サインアップがまだの場合は、上記ボタンよりアプリに移動してサインアップを行ってください。</p>
-      <p>メール</p>
-      <input type="email" v-model="email" />
-      <div>
+      <!-- メール -->
+      <div class="form">
+        <p>メール</p>
+        <input type="email" v-model="email" />
+      </div>
+      <!-- パスワード -->
+      <div class="form pass-word">
         <p>パスワード</p>
         <input type="password" v-model="password" />
       </div>
       <button class="auth-button" @click="signin()">ログイン</button>
-      <button @click="signin(true)">tl</button>
+      <button class="auth-button sample-button" @click="signin(true)">サンプルユーザーでログイン</button>
     </div>
     <!-- ログイン中 -->
-    <div v-else-if="isLogin === LoginStatus.IN">
-      <!-- サインアウト -->
-      <button @click="signout()">サインアウト</button>
-      <p>ログイン：{{ user?.email }}</p>
-      <!-- トピック情報 -->
-      <p>topicUID:{{ targetTopicUID }}</p>
-      <p>タイトル:{{ targetTopicTitle }}</p>
-      <input type="text" v-model="formTopicUID" />
-      <button @click="registerTopicUID()">トピック登録</button>
+    <div class="login" v-else-if="isLogin === LoginStatus.IN">
+      <div class="data-row">
+        <div class="data-title">ログインメール</div>
+        <div class="data-data">{{ user?.email }}</div>
+      </div>
+      <!-- トピックID -->
+      <div class="data-row">
+        <div class="data-title">topicID</div>
+        <div class="data-data">{{ targetTopicID }}</div>
+      </div>
+      <!-- タイトル -->
+      <div class="data-row">
+        <div class="data-title">タイトル</div>
+        <div class="data-data">{{ targetTopicTitle }}</div>
+      </div>
+      <!-- トピックIDフォーム -->
+      <input class="topic-form" type="text" v-model="formTopicID" />
+      <button class="auth-button" @click="registerTopicID()">トピック登録</button>
       <!-- 結果確認 -->
       <div class="result-prev" v-if="isPreview">
-        結果表示欄
-        <p>url:{{ targetURL }}</p>
+        <div class="data-row">
+          <div class="url-display">URL</div>
+          <div class="data-data">{{ targetURL }}</div>
+        </div>
         <div v-if="!history">このページの調査履歴はありません。</div>
         <div v-else>
           <div>調査状態:{{ history.status }}</div>
           <button @click="copy(history.docID)">この履歴のIDをコピーする</button>
         </div>
-        <button @click="setPreview(false)">閉じる</button>
+        <div class="close-button-wrap">
+          <button class="close-button" @click="setPreview(false)">閉じる</button>
+        </div>
       </div>
-      <!-- <button @click="getTest">gt</button> -->
-      <button v-if="targetTopicUID !== '未設定' && targetTopicUID" @click="getHistory">調査結果確認</button>
+      <button
+        class="result-button"
+        v-if="targetTopicID !== '未設定' && targetTopicID"
+        @click="getHistory"
+      >調査結果確認</button>
     </div>
   </div>
 </template>
@@ -113,27 +140,27 @@ export default defineComponent({
     // マウンテッド時
     onBeforeMount(() => {
       authCheckPending.value = true;
-      targetTopicUID.value = localStorage["targetTopicUID"] ? localStorage["targetTopicUID"] : "未設定";
+      targetTopicID.value = localStorage["targetTopicID"] ? localStorage["targetTopicID"] : "未設定";
       targetTopicTitle.value = localStorage["targetTopicTitle"] ? localStorage["targetTopicTitle"] : "未設定";
       _setUser(auth.currentUser);
     }
     )
 
-    // topicUID制御
-    const formTopicUID = ref("");
-    const targetTopicUID = ref("");
+    // topicID制御
+    const formTopicID = ref("");
+    const targetTopicID = ref("");
     const targetTopicTitle = ref("");
 
-    const _setTargetTopic = (uid: string, title: string) => {
-      localStorage["targetTopicUID"] = uid;
+    const _setTargetTopic = (id: string, title: string) => {
+      localStorage["targetTopicID"] = id;
       localStorage["targetTopicTitle"] = title;
-      targetTopicUID.value = localStorage["targetTopicUID"];
+      targetTopicID.value = localStorage["targetTopicID"];
       targetTopicTitle.value = localStorage["targetTopicTitle"];
     };
 
     // マウンテッド時
     onBeforeMount(() => {
-      targetTopicUID.value = localStorage["targetTopicUID"] ? localStorage["targetTopicUID"] : "未設定";
+      targetTopicID.value = localStorage["targetTopicID"] ? localStorage["targetTopicID"] : "未設定";
       targetTopicTitle.value = localStorage["targetTopicTitle"] ? localStorage["targetTopicTitle"] : "未設定";
       onAuthStateChanged(auth, (user) => {
         if (user && user.email) {
@@ -146,8 +173,8 @@ export default defineComponent({
     }
     )
 
-    const registerTopicUID = async () => {
-      const docRef = doc(db, "topic", formTopicUID.value)
+    const registerTopicID = async () => {
+      const docRef = doc(db, "topic", formTopicID.value)
       try {
         const topicDocSnap = await getDoc(docRef)
         if (!topicDocSnap.exists()) {
@@ -155,7 +182,7 @@ export default defineComponent({
           _setTargetTopic("未設定", "未設定")
         } else {
           const topicDocData = topicDocSnap.data();
-          _setTargetTopic(formTopicUID.value, topicDocData.title)
+          _setTargetTopic(formTopicID.value, topicDocData.title)
         }
       } catch (error: any) {
         console.log(error);
@@ -170,18 +197,23 @@ export default defineComponent({
     const getHistory = async () => {
       chrome.storage.sync.get(["targetURL"], async (items) => {
         targetURL.value = items.targetURL;
-        console.log("⬇︎【ログ】", "targetTopicUID.value"); console.log(targetTopicUID.value);
-        const uid = targetTopicUID.value
-        console.log("⬇︎【ログ】", "uid"); console.log(typeof uid);
-        const colRef = collection(db, "topic", uid, "history")
-        const q = query(colRef, where("url", "==", items.targetURL))
-        const querySnapshot = await getDocs(q);
+        console.log("⬇︎【ログ】", "targetTopicID.value"); console.log(targetTopicID.value);
+        const id = targetTopicID.value
+        console.log("⬇︎【ログ】", "id"); console.log(typeof id);
+        const colRef = collection(db, "topic", id, "history")
+        const querySnapshot = await getDocs(colRef);
         console.log("⬇︎【ログ】", "querySnapshot"); console.log(querySnapshot);
         console.log("⬇︎【ログ】", "items.targetURL"); console.log(items.targetURL);
         if (querySnapshot.docs.length === 0) {
           history.value = null
         } else {
-          history.value = querySnapshot.docs[0].data()
+          for (let i = 0; i < querySnapshot.docs.length; i++) {
+            const historyData = querySnapshot.docs[0].data()
+            if (historyData.url === items.targetURL) {
+              history.value = historyData;
+              break;
+            }
+          }
         }
         setPreview(true);
       });
@@ -199,12 +231,12 @@ export default defineComponent({
       password.value = "";
       isLogin.value = "out";
       user.value = null;
-      formTopicUID.value = "";
-      targetTopicUID.value = "";
+      formTopicID.value = "";
+      targetTopicID.value = "";
       targetTopicTitle.value = "";
       targetURL.value = "";
       isPreview.value = false;
-      localStorage["targetTopicUID"] = "";
+      localStorage["targetTopicID"] = "";
       localStorage["targetTopicTitle"] = "";
       chrome.storage.sync.set(
         {
@@ -227,8 +259,6 @@ export default defineComponent({
       }
     }
 
-
-
     return {
       authCheckPending,
       email,
@@ -236,10 +266,10 @@ export default defineComponent({
       signin,
       isLogin,
       signout,
-      formTopicUID,
+      formTopicID,
       user,
-      registerTopicUID,
-      targetTopicUID,
+      registerTopicID,
+      targetTopicID,
       targetTopicTitle,
       getHistory,
       isPreview,
@@ -259,18 +289,146 @@ a {
   width: 100%;
   height: 100%;
   text-decoration: none;
-  color: black;
+  color: white;
+}
+
+button {
+  border-radius: 5px;
+}
+
+button:hover {
+  cursor: pointer;
 }
 
 .root-container {
   width: 300px;
-  border: solid 1px red;
+}
+
+.common {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 15px;
+  text-align: center;
+  margin: 10xp;
+}
+
+.logout {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.login {
+  padding-top: 10px;
+}
+.form {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.form > p {
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+.form > input {
+  width: 80%;
+  border-radius: 5px;
+  border: solid 1px gray;
+}
+.pass-word {
+  margin-bottom: 15px;
+}
+
+.topic-form {
+  width: 190px;
+  margin-right: 8px;
 }
 
 .auth-button {
+  margin-top: 10px;
+  background-color: hotpink;
+  color: white;
+  border: solid 1px hotpink;
+}
+
+.button-box {
   margin-top: 30px;
 }
+
+.sample-button {
+  width: 200px;
+  margin-top: 10px;
+  background-color: gray;
+  color: lightgray;
+  border: solid 1px gray;
+}
+
+.sigunout-button-wrap {
+  display: flex;
+  justify-content: end;
+}
+.result-button {
+  margin-top: 10px;
+  width: 100%;
+  background-color: lightpink;
+  border: solid 1px black;
+}
 .result-prev {
-  border: solid 1px green;
+  margin-top: 10px;
+  background: white;
+  border-radius: 5px;
+  border: solid 1px gray;
+
+  padding: 5px;
+}
+.close-button-wrap {
+  display: flex;
+  justify-content: end;
+}
+.close-button {
+  background-color: lightslategrey;
+  border: solid 1px lightslategray;
+  color: white;
+}
+
+.data-row {
+  display: flex;
+  padding: 2px;
+  margin: 3px;
+  border: solid 1px gray;
+  border-radius: 2px;
+  background-color: white;
+}
+.data-title {
+  border: solid 1px gray;
+  background-color: lightgray;
+  min-width: 90px;
+  text-align: center;
+  line-height: 23px;
+}
+.data-data {
+  padding: 3px;
+  white-space: nowrap; /* 横幅のMAXに達しても改行しない */
+  overflow: hidden; /* ハミ出した部分を隠す */
+  text-overflow: ellipsis; /* 「…」と省略 */
+}
+.url-row {
+  border: solid 1px black;
+  border-radius: 3px;
+}
+.url-display {
+  border: solid 1px gray;
+  background-color: lightgray;
+  width: 30px;
+  text-align: center;
+  line-height: 23px;
 }
 </style>
