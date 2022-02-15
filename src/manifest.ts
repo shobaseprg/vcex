@@ -4,7 +4,7 @@ import { r } from '../scripts/utils'
 const getManifest = () => {
   return {
     manifest_version: 3,
-    name: 'SEARCHISTORY',
+    name: 'SEARCHIST',
     description: 'Build an Extension!',
     version: '1.0',
     action: {
@@ -13,7 +13,7 @@ const getManifest = () => {
     background: {
       "service_worker": "event.js"
     },
-    permissions: ['contextMenus', "storage", "activeTab", "scripting"],
+    permissions: ['contextMenus', "storage", "activeTab"]
   }
 }
 function writeManifest() {

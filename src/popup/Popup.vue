@@ -14,7 +14,9 @@
     <div v-if="authCheckPending"></div>
     <!--■■■■■■■■■■■■■■■■■ ログアウト中 ■■■■■■■■■■■■■■■■■-->
     <div class="auth-wrap" v-else-if="isLogin === LoginStatus.OUT && authCheckPending === false">
-      <p>サインアップがまだの場合は、上記ボタンよりアプリに移動してサインアップを行ってください。</p>
+      <div class="top-alert">
+        <p>サインアップがまだの場合は、上記ボタンよりアプリに移動してサインアップを行ってください。</p>
+      </div>
       <div class="form">
         <p>メール</p>
         <input type="email" v-model="email" />
@@ -201,21 +203,6 @@ export default defineComponent({
       targetTopicID.value = localStorage["targetTopicID"];
       targetTopicTitle.value = localStorage["targetTopicTitle"];
     };
-    //=================== 初期topic ====================
-    // onBeforeMount(() => {
-    //   targetTopicID.value = localStorage["targetTopicID"] ? localStorage["targetTopicID"] : "未設定";
-    //   targetTopicTitle.value = localStorage["targetTopicTitle"] ? localStorage["targetTopicTitle"] : "未設定";
-
-    //   onAuthStateChanged(auth, (user) => {
-    //     if (user && user.email) {
-    //       email.value = user.email
-    //       isLogin.value = LoginStatus.IN;
-    //     } else {
-    //       isLogin.value = LoginStatus.OUT;
-    //     }
-    //   })
-    // }
-    // )
     //=================== topic登録 ====================
     const registerTopicID = async () => {
       if (formTopicID.value.length !== 20) {
@@ -226,7 +213,7 @@ export default defineComponent({
       try {
         const topicDocSnap = await getDoc(docRef)
         if (!topicDocSnap.exists()) {
-          alert("そのIDの事案は存在しません。");
+          alert("そのIDのトピックは存在しません。");
           _setTargetTopic("未設定", "未設定")
         } else {
           const topicDocData = topicDocSnap.data();
@@ -394,7 +381,7 @@ export default defineComponent({
       const wrongPasswordReg = /wrong-password/;
 
       if (permissionReg.test(error)) {
-        alert("このIDの事案にアクセスする権限がありません。");
+        alert("アクセスする権限がありません。");
       } else if (invalidEmailReg.test(error)) {
         alert("メールアドレスが正しくありません。");
       } else if (userNotFoundReg.test(error)) {
@@ -519,6 +506,11 @@ button:hover {
 }
 
 /* ===============  module =================*/
+.top-alert {
+  border: solid 1px gray;
+  padding: 3px;
+  border-radius: 5px;
+}
 /* --------- 情報1行 ---------*/
 .info-row {
   display: flex;
