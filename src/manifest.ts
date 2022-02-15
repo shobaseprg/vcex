@@ -4,7 +4,7 @@ import { r } from '../scripts/utils'
 const getManifest = () => {
   return {
     manifest_version: 3,
-    name: 'Getting Started Example',
+    name: 'SEARCHISTORY',
     description: 'Build an Extension!',
     version: '1.0',
     action: {
