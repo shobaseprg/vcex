@@ -27,7 +27,6 @@
       </div>
       <div class="login-buttons">
         <button class="pink-button" @click="signin()">ログイン</button>
-        <button class="sample-button" @click="signin(true)">サンプルユーザーでログイン</button>
       </div>
     </div>
     <!--■■■■■■■■■■■■■■■■■ ログイン中 ■■■■■■■■■■■■■■■■■-->
@@ -55,6 +54,7 @@
       </div>
       <!--================= historyエリア =================-->
       <div class="area-box" v-if="isPreview">
+        <!-------------------結果 なし ------------------->
         <div v-if="!history" class="no-exit">このページの調査履歴はありません。</div>
         <div class="info-row">
           <div class="info-title in-history">タイトル</div>
@@ -64,7 +64,7 @@
           <div class="info-title in-history">URL</div>
           <div class="info-data">{{ targetURL }}</div>
         </div>
-        <!-- 結果あった場合 -->
+        <!-------------------結果あり ------------------->
         <div v-if="history" class="info-row">
           <div class="info-title in-history">状態</div>
           <div class="info-data">
@@ -91,11 +91,13 @@
         </div>
       </div>
       <!--================= 調査確認ボタン =================-->
+      <!-- 現在のページ -->
       <button
         class="light-pink-button"
         v-if="targetTopicID !== '未設定' && targetTopicID"
         @click="getHistory('page')"
       >現在のページの調査履歴確認</button>
+      <!-- 設定リンク -->
       <button
         class="light-pink-button"
         v-if="targetTopicID !== '未設定' && targetTopicID"
@@ -132,35 +134,13 @@ export default defineComponent({
     const user = ref<User | null>(null);
 
     //■■■■■■■■■■■■■■■■■■■ サインイン ■■■■■■■■■■■■■■■■■■■■
-    const signin = async (isTest: boolean = false) => {
-      if (isTest) {
-        switch (email.value) {
-          case "0":
-            email.value = "1s@g.com";
-            break;
-          case "1":
-            email.value = "1s@g.com";
-            break;
-          case "2":
-            email.value = "2s@g.com";
-            break;
-          case "3":
-            email.value = "3s@g.com";
-            break;
-          default:
-            break;
-        }
-        email.value = "1s@g.com";
-        password.value = "11111111";
-      }
-      return await signInWithEmailAndPassword(auth, email.value, password.value)
+    const signin = async () => {
+      await signInWithEmailAndPassword(auth, email.value, password.value)
         .then(async () => {
           _pushInfoMessage("ログインしました!")
-          return true;
         })
         .catch((error) => {
           _firebaseErrorHandle(error)
-          return false;
         });
     };
     //■■■■■■■■■■■■■■■■■■■ サインアウト ■■■■■■■■■■■■■■■■■■■■
@@ -172,7 +152,7 @@ export default defineComponent({
     };
     //■■■■■■■■■■■■■■■■■■■ ログイン状態監視 ■■■■■■■■■■■■■■■■■■■■
     const _setUser = (u: User | null) => {
-      if (u) {
+      if (u !== null && u.emailVerified) {
         user.value = u
         isLogin.value = LoginStatus.IN;
       } else {
@@ -248,7 +228,7 @@ export default defineComponent({
       try {
         const querySnapshot = await getDocs(q);
         if (querySnapshot.docs.length === 0) {
-          history.value = null
+          history.value = null;
         } else {
           history.value = querySnapshot.docs[0].data();
           selectedStatus.value = history.value.status;
@@ -263,10 +243,10 @@ export default defineComponent({
       switch (type) {
         case 'link':
           chrome.storage.sync.get(["targetURL", "targetTitle"], async (items) => {
-            targetURL.value = items.targetURL;
-            targetTitle.value = items.targetTitle;
+            targetURL.value = await items.targetURL;
+            targetTitle.value = await items.targetTitle;
+            _getHistoryFromFB();
           })
-          _getHistoryFromFB();
           break;
         case 'page':
           chrome.tabs.query({
@@ -286,11 +266,6 @@ export default defineComponent({
     };
     //=================== 作成 ====================
     const createHistory = async () => {
-      console.log("⬇︎【ログ】", "targetTopicID.value"); console.log(targetTopicID.value);
-      const auth = getAuth();
-      const users = auth.currentUser;
-      console.log("⬇︎【ログ】", "users?.uid"); console.log(users?.uid);
-      console.log("⬇︎【ログ】", "uid"); console.log(user.value?.uid);
 
       const newHistoryRef = doc(collection(db, 'topic', targetTopicID.value, 'history'));
       try {
@@ -370,7 +345,7 @@ export default defineComponent({
       infoMessage.value = message;
       setTimeout(() => {
         infoMessage.value = null;
-      }, 2000
+      }, 3000
       )
     };
     //■■■■■■■■■■■■■■■■■■■ エラーハンドル ■■■■■■■■■■■■■■■■■■■■
