@@ -6,7 +6,7 @@ const getManifest = () => {
     manifest_version: 3,
     name: 'SEARCHISTORY',
     description: 'manage search history',
-    version: '1.0',
+    version: '1.2',
     icons: {
       "16": "image/shicon16.png",
       "48": "image/shicon48.png",

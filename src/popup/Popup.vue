@@ -6,9 +6,16 @@
     </div>
     <div class="common">
       <div class="title">- SEARCHISTORY -</div>
-      <button class="pink-button">
-        <a href="https://searchistory.web.app/" target="_blank" rel="noopener noreferrer">アプリへ</a>
-      </button>
+      <!-- ボタンエリア -->
+      <div class="head-button-area">
+        <button class="pink-button">
+          <a href="https://searchistory.web.app/" target="_blank" rel="noopener noreferrer">アプリへ</a>
+        </button>
+        <div class="button-space"></div>
+        <button class="gray-button">
+          <a href="https://fito2prg.com/archives/463" target="_blank" rel="noopener noreferrer">使用方法</a>
+        </button>
+      </div>
     </div>
     <!--■■■■■■■■■■■■■■■■■ 初期 ■■■■■■■■■■■■■■■■■-->
     <div v-if="authCheckPending"></div>
@@ -268,11 +275,12 @@ export default defineComponent({
     const createHistory = async () => {
 
       const newHistoryRef = doc(collection(db, 'topic', targetTopicID.value, 'history'));
+      const shortTargetTitle = targetTitle.value.substring(0, 299);
       try {
         await setDoc(newHistoryRef, {
           url: targetURL.value,
-          title: targetTitle.value,
-          content: "",
+          title: shortTargetTitle,
+          content: "未記入",
           status: "pending",
           files: [],
           createdAt: serverTimestamp(),
@@ -538,6 +546,12 @@ button:hover {
   text-align: center;
 }
 /* --------- ボタン ---------*/
+.head-button-area {
+  display: flex;
+}
+.button-space {
+  width: 10px;
+}
 /* グレイボタン */
 .gray-button {
   background-color: lightslategrey;
@@ -566,13 +580,13 @@ button:hover {
 }
 /* --------- タイトル ---------*/
 .title {
-  border: solid 1px gray;
-  background-color: white;
+  border: solid 2px black;
+  background-color: hotpink;
   border-radius: 20px;
   padding: 3px 20px 3px 20px;
   font-size: 15px;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 /* --------- authフォーム ---------*/
 .form {
