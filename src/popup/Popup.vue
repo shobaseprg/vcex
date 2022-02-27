@@ -75,25 +75,25 @@
         <div v-if="history" class="info-row">
           <div class="info-title in-history">状態</div>
           <div class="info-data">
-            {{ displayStatus(history.status) }}
+            {{ displayStatusList[history.status] }}
             <select
               v-model="selectedStatus"
               v-on:change="statusChange()"
             >
               <option value="pending">未調査</option>
               <option value="unsolved">未解決</option>
-              <option value="solved">解決済</option>
+              <option value="solved">解決</option>
             </select>
           </div>
         </div>
         <div v-if="history" class="info-row">
           <div class="info-title in-history">ID</div>
-          <div class="info-data">{{ history.docID }}</div>
+          <div class="info-data">{{ history.doc_id }}</div>
         </div>
         <!--================= bottom =================-->
         <div class="bottom-button-wrap">
           <button v-if="!history" class="pink-button" @click="createHistory()">このページの履歴を作成する</button>
-          <button v-else class="pink-button" @click="copy(history.docID)">この履歴のIDをコピーする</button>
+          <button v-else class="pink-button" @click="copy(history.doc_id)">この履歴のIDをコピーする</button>
           <button class="gray-button" @click="setPreview(false)">閉じる</button>
         </div>
       </div>
@@ -196,7 +196,7 @@ export default defineComponent({
         alert("トピックIDの形式が正しくありません。");
         return;
       }
-      const docRef = doc(db, "topic", formTopicID.value);
+      const docRef = doc(db, "topics", formTopicID.value);
       try {
         const topicDocSnap = await getDoc(docRef)
         if (!topicDocSnap.exists()) {
@@ -217,28 +217,20 @@ export default defineComponent({
     const targetTitle = ref("");
     const history = ref<any | null>(null);
 
-    const displayStatus = (status: string) => {
-      switch (status) {
-        case "pending":
-          return "未調査"
-        case "unsolved":
-          return "未解決"
-        case "solved":
-          return "解決"
-        default:
-          break;
-      }
-    }
+    const displayStatusList = ["未調査", "未解決", "解決"]
+    const valueStatusList = ["pending", "unsolved", "solved"]
+
+
     //=================== 取得 ====================
     const _getHistoryFromFB = async () => {
-      const q = query(collection(db, "topic", targetTopicID.value, "history"), where("url", "==", targetURL.value));
+      const q = query(collection(db, "topics", targetTopicID.value, "histories"), where("url", "==", targetURL.value));
       try {
         const querySnapshot = await getDocs(q);
         if (querySnapshot.docs.length === 0) {
           history.value = null;
         } else {
           history.value = querySnapshot.docs[0].data();
-          selectedStatus.value = history.value.status;
+          selectedStatus.value = valueStatusList[history.value.status];
         }
         setPreview(true);
       } catch (error: any) {
@@ -274,19 +266,19 @@ export default defineComponent({
     //=================== 作成 ====================
     const createHistory = async () => {
 
-      const newHistoryRef = doc(collection(db, 'topic', targetTopicID.value, 'history'));
+      const newHistoryRef = doc(collection(db, 'topics', targetTopicID.value, 'histories'));
       const shortTargetTitle = targetTitle.value.substring(0, 299);
       try {
         await setDoc(newHistoryRef, {
           url: targetURL.value,
           title: shortTargetTitle,
           content: "未記入",
-          status: "pending",
+          status: 0,
           files: [],
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          docID: newHistoryRef.id,
-          topicDocID: targetTopicID.value,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+          doc_id: newHistoryRef.id,
+          topic_doc_id: targetTopicID.value,
           uid: user.value?.uid,
         });
         _pushInfoMessage("このURLのページの調査履歴を作成しました。")
@@ -299,11 +291,14 @@ export default defineComponent({
     const selectedStatus = ref("");
 
     const statusChange = async () => {
-      const updateHistoryRef = doc(db, 'topic', targetTopicID.value, 'history', history.value.docID);
+      const updateHistoryRef = doc(db, 'topics', targetTopicID.value, 'histories', history.value.doc_id);
       try {
+        console.log("⬇︎【ログ】", "selectedStatus.value"); console.log(selectedStatus.value);
+
+
         await updateDoc(updateHistoryRef, {
-          status: selectedStatus.value,
-          updatedAt: serverTimestamp(),
+          status: valueStatusList.findIndex(status => status === selectedStatus.value),
+          updated_at: serverTimestamp(),
         });
         getHistory("afterCreate");
         _pushInfoMessage("調査状態を変更しました。")
@@ -397,7 +392,7 @@ export default defineComponent({
       setPreview,
       history,
       copy,
-      displayStatus,
+      displayStatusList,
       selectedStatus,
       statusChange,
       infoMessage
