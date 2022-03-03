@@ -293,9 +293,6 @@ export default defineComponent({
     const statusChange = async () => {
       const updateHistoryRef = doc(db, 'topics', targetTopicID.value, 'histories', history.value.doc_id);
       try {
-        console.log("⬇︎【ログ】", "selectedStatus.value"); console.log(selectedStatus.value);
-
-
         await updateDoc(updateHistoryRef, {
           status: valueStatusList.findIndex(status => status === selectedStatus.value),
           updated_at: serverTimestamp(),
